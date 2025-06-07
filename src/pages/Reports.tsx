@@ -3,8 +3,11 @@ import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Download, Trash2, Calendar, Eye } from 'lucide-react';
+import { FileText, Download, Trash2, Calendar, Eye, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { deleteObject, ref } from 'firebase/storage';
+import { db, storage } from '@/lib/firebase';
 
 interface MedicalReport {
   id: string;
@@ -18,29 +21,73 @@ interface MedicalReport {
 const Reports = () => {
   const [reports, setReports] = useState<MedicalReport[]>([]);
   const [selectedReport, setSelectedReport] = useState<MedicalReport | null>(null);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Load reports from localStorage
-    const savedReports = localStorage.getItem('medicalReports');
-    if (savedReports) {
-      setReports(JSON.parse(savedReports));
-    }
+    fetchReports();
   }, []);
 
-  const handleDeleteReport = (reportId: string) => {
-    const updatedReports = reports.filter(report => report.id !== reportId);
-    setReports(updatedReports);
-    localStorage.setItem('medicalReports', JSON.stringify(updatedReports));
-    
-    if (selectedReport?.id === reportId) {
-      setSelectedReport(null);
+  const fetchReports = async () => {
+    try {
+      setLoading(true);
+      const querySnapshot = await getDocs(collection(db, 'medicalReports'));
+      const reportsData: MedicalReport[] = [];
+      
+      querySnapshot.forEach((doc) => {
+        reportsData.push({
+          id: doc.id,
+          ...doc.data()
+        } as MedicalReport);
+      });
+      
+      // Sort by upload date (newest first)
+      reportsData.sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime());
+      setReports(reportsData);
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      toast({
+        title: "Error loading reports",
+        description: "Failed to fetch your medical reports. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
-    
-    toast({
-      title: "Report deleted",
-      description: "The medical report has been removed from your storage.",
-    });
+  };
+
+  const handleDeleteReport = async (report: MedicalReport) => {
+    try {
+      // Delete from Firestore
+      await deleteDoc(doc(db, 'medicalReports', report.id));
+      
+      // Delete from Storage
+      const fileName = report.url.split('/').pop()?.split('?')[0];
+      if (fileName) {
+        const storageRef = ref(storage, `medical-reports/${fileName}`);
+        await deleteObject(storageRef);
+      }
+      
+      // Update local state
+      const updatedReports = reports.filter(r => r.id !== report.id);
+      setReports(updatedReports);
+      
+      if (selectedReport?.id === report.id) {
+        setSelectedReport(null);
+      }
+      
+      toast({
+        title: "Report deleted",
+        description: "The medical report has been removed from your storage.",
+      });
+    } catch (error) {
+      console.error('Error deleting report:', error);
+      toast({
+        title: "Error deleting report",
+        description: "Failed to delete the report. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleDownload = (report: MedicalReport) => {
@@ -52,13 +99,22 @@ const Reports = () => {
     document.body.removeChild(link);
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+        <Header />
+        <main className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-96">
+            <div className="text-center">
+              <Loader2 className="w-12 h-12 text-blue-600 mx-auto mb-4 animate-spin" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Loading your reports...</h3>
+              <p className="text-gray-600">Please wait while we fetch your medical reports</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
@@ -135,7 +191,7 @@ const Reports = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDeleteReport(selectedReport.id)}
+                          onClick={() => handleDeleteReport(selectedReport)}
                           className="text-red-600 hover:text-red-700"
                         >
                           <Trash2 className="w-4 h-4 mr-2" />

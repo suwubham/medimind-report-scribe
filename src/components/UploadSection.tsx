@@ -4,7 +4,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '@/lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
+import { storage, db } from '@/lib/firebase';
 
 interface UploadSectionProps {
   onReportAnalyzed: (summary: string, history: any[]) => void;
@@ -94,9 +95,8 @@ export const UploadSection = ({ onReportAnalyzed }: UploadSectionProps) => {
     }
   };
 
-  const saveReportToStorage = (file: File, imageUrl: string) => {
+  const saveReportToFirestore = async (file: File, imageUrl: string) => {
     const report = {
-      id: Date.now().toString(),
       name: file.name,
       url: imageUrl,
       uploadDate: new Date().toISOString(),
@@ -104,9 +104,7 @@ export const UploadSection = ({ onReportAnalyzed }: UploadSectionProps) => {
       type: file.type
     };
 
-    const existingReports = JSON.parse(localStorage.getItem('medicalReports') || '[]');
-    const updatedReports = [report, ...existingReports];
-    localStorage.setItem('medicalReports', JSON.stringify(updatedReports));
+    await addDoc(collection(db, 'medicalReports'), report);
   };
 
   const handleAnalyze = async () => {
@@ -116,8 +114,8 @@ export const UploadSection = ({ onReportAnalyzed }: UploadSectionProps) => {
     try {
       const imageUrl = await uploadToFirebase(uploadedFile);
       
-      // Save report to localStorage
-      saveReportToStorage(uploadedFile, imageUrl);
+      // Save report to Firestore
+      await saveReportToFirestore(uploadedFile, imageUrl);
       
       setIsUploading(false);
       setIsAnalyzing(true);
