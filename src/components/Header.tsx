@@ -51,7 +51,7 @@ export const Header = () => {
             <div className="hidden lg:flex items-center space-x-6">
               <div className="text-center">
                 <div className="text-sm font-medium text-gray-900">Secure</div>
-                <div className="text-xs text-gray-500">HIPAA Compliant</div>
+                <div className="text-xs text-gray-500">Fully Encrypted</div>
               </div>
               <div className="text-center">
                 <div className="text-sm font-medium text-gray-900">Fast</div>

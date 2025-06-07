@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { deleteObject, ref } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
+import { COLLECTIONS } from '@/lib/constants';
 
 interface MedicalReport {
   id: string;
@@ -31,7 +32,7 @@ const Reports = () => {
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const querySnapshot = await getDocs(collection(db, 'medicalReports'));
+      const querySnapshot = await getDocs(collection(db, COLLECTIONS.MEDICAL_REPORTS));
       const reportsData: MedicalReport[] = [];
       
       querySnapshot.forEach((doc) => {

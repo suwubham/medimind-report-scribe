@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
+import { API_BASE_URL } from '@/lib/constants';
+import Markdown from 'react-markdown';
 
 interface ChatSectionProps {
   reportSummary: string;
@@ -39,7 +41,7 @@ export const ChatSection = ({
     setIsAsking(true);
 
     try {
-      const response = await fetch('http://localhost:8000/process', {
+      const response = await fetch(`${API_BASE_URL}/process`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -77,7 +79,7 @@ export const ChatSection = ({
 
   const resetConversation = async () => {
     try {
-      await fetch('http://localhost:8000/exit');
+      await fetch(`${API_BASE_URL}/exit`);
       onNewReport();
     } catch (error) {
       console.error('Reset error:', error);
@@ -113,7 +115,7 @@ export const ChatSection = ({
         <CardContent className="p-6">
           <div className="prose prose-sm max-w-none">
             <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-              {reportSummary}
+                <Markdown>{reportSummary}</Markdown>
             </p>
           </div>
         </CardContent>
@@ -141,10 +143,14 @@ export const ChatSection = ({
                               alt="Medical Report" 
                               className="w-full h-auto rounded-lg max-w-xs"
                             />
-                            <p className="text-xs text-blue-100">Medical Report Uploaded</p>
+                            
                           </div>
                         ) : (
-                          <p className="text-sm">{message.content[0]?.text}</p>
+                          <p className="text-sm">
+                            <Markdown>
+                            {message.content[0]?.text}
+                            </Markdown>
+                            </p>
                         )}
                       </div>
                     </div>

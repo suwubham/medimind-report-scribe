@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, addDoc } from 'firebase/firestore';
 import { storage, db } from '@/lib/firebase';
+import { API_BASE_URL, COLLECTIONS } from '@/lib/constants';
 
 interface UploadSectionProps {
   onReportAnalyzed: (summary: string, history: any[]) => void;
@@ -70,7 +71,7 @@ export const UploadSection = ({ onReportAnalyzed }: UploadSectionProps) => {
 
   const analyzeReport = async (imageUrl: string) => {
     try {
-      const response = await fetch('http://localhost:8000/process', {
+      const response = await fetch(`${API_BASE_URL}/process`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -170,12 +171,12 @@ export const UploadSection = ({ onReportAnalyzed }: UploadSectionProps) => {
                   type="file"
                   accept="image/*"
                   onChange={handleFileSelect}
-                  className="hidden"
                   id="file-upload"
+                  className="sr-only"
                 />
                 <label htmlFor="file-upload">
-                  <Button className="cursor-pointer bg-blue-600 hover:bg-blue-700">
-                    Browse Files
+                  <Button asChild className="cursor-pointer bg-blue-600 hover:bg-blue-700">
+                    <span>Browse Files</span>
                   </Button>
                 </label>
               </div>
