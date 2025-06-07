@@ -134,7 +134,18 @@ export const ChatSection = ({
                   {message.role === 'user' && (
                     <div className="flex justify-end">
                       <div className="bg-blue-600 text-white rounded-lg px-4 py-2 max-w-xs lg:max-w-md">
-                        <p className="text-sm">{message.content[0]?.text}</p>
+                        {message.content[0]?.type === 'image_url' ? (
+                          <div className="space-y-2">
+                            <img 
+                              src={message.content[0].image_url.url} 
+                              alt="Medical Report" 
+                              className="w-full h-auto rounded-lg max-w-xs"
+                            />
+                            <p className="text-xs text-blue-100">Medical Report Uploaded</p>
+                          </div>
+                        ) : (
+                          <p className="text-sm">{message.content[0]?.text}</p>
+                        )}
                       </div>
                     </div>
                   )}
