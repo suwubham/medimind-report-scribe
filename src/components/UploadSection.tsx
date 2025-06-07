@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { Upload, FileText, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -95,12 +94,31 @@ export const UploadSection = ({ onReportAnalyzed }: UploadSectionProps) => {
     }
   };
 
+  const saveReportToStorage = (file: File, imageUrl: string) => {
+    const report = {
+      id: Date.now().toString(),
+      name: file.name,
+      url: imageUrl,
+      uploadDate: new Date().toISOString(),
+      size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
+      type: file.type
+    };
+
+    const existingReports = JSON.parse(localStorage.getItem('medicalReports') || '[]');
+    const updatedReports = [report, ...existingReports];
+    localStorage.setItem('medicalReports', JSON.stringify(updatedReports));
+  };
+
   const handleAnalyze = async () => {
     if (!uploadedFile) return;
 
     setIsUploading(true);
     try {
       const imageUrl = await uploadToFirebase(uploadedFile);
+      
+      // Save report to localStorage
+      saveReportToStorage(uploadedFile, imageUrl);
+      
       setIsUploading(false);
       setIsAnalyzing(true);
 
@@ -108,7 +126,7 @@ export const UploadSection = ({ onReportAnalyzed }: UploadSectionProps) => {
       
       toast({
         title: "Report analyzed successfully!",
-        description: "Your medical report has been processed.",
+        description: "Your medical report has been processed and saved.",
       });
 
       onReportAnalyzed(summary, conversationHistory);
